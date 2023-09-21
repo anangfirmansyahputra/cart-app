@@ -1,95 +1,112 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+'use client';
+
+import ModalToping from '@/components/modal-toping';
+import { Pizza, PizzaCart, Toping } from '@/type';
+import Image from 'next/image';
+import { useState } from 'react';
+import { pizzas, topings as topingItem } from '@/constants';
 
 export default function Home() {
-  return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+	const [cart, setCart] = useState<PizzaCart[]>([]);
+	const [topings, setTopings] = useState<Toping[]>([]);
+	const [modalToping, setModalToping] = useState(false);
+	const [selectPizza, setSelectPizza] = useState<Pizza>();
+	const [isActive, setIsActive] = useState(false);
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+	const addPizza = (pizza: Pizza) => {
+		setModalToping(true);
+		setSelectPizza(pizza);
+	};
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
+	const addTopping = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const id = parseInt(event.target.value);
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
+		const selectedToping = topingItem.find((item) => item.id === id);
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore the Next.js 13 playground.</p>
-        </a>
+		if (event.target.checked && selectedToping) {
+			setTopings((prev) => [...prev, selectedToping]);
+		} else {
+			setTopings((prev) => prev.filter((item) => item.id !== id));
+		}
+	};
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+	const addToCart = () => {
+		if (!selectPizza) {
+			throw new Error('Pizza Tidak ditemukan');
+		}
+
+		const pizza: PizzaCart = {
+			id: Date.now(),
+			pizza: selectPizza,
+			toping: topings.length > 0 ? topings.map((toping) => toping.name).join(', ') : 'No topings',
+			total: (selectPizza?.price ?? 0) + topings.reduce((acc, toping) => acc + toping.price, 0),
+		};
+
+		setCart((prevCart) => [...prevCart, pizza]);
+		setModalToping(false);
+		setTopings([]);
+	};
+
+	const deletePizza = (id: number) => {
+		setCart((prev) => prev.filter((pizza) => pizza.id !== id));
+	};
+
+	return (
+		<main className='container'>
+			<section className='pizza-section'>
+				<div className='logo-container'>
+					<h1 className='pizza-title'>Pizza List</h1>
+					<button onClick={() => setIsActive(true)}>
+						<img src='/assets/cart.png' alt='' />
+						<div>{cart.length}</div>
+					</button>
+				</div>
+				<div className='pizza-container'>
+					{pizzas.map((pizza) => (
+						<div key={pizza.id} className='pizza-card' role='button' onClick={() => addPizza(pizza)}>
+							<div className='pizza-img'>
+								<Image src={pizza.img} priority alt='Pizza' fill />
+							</div>
+							<div className='pizza-desc'>{pizza.name}</div>
+							<div className='pizza-price'>${pizza.price}</div>
+						</div>
+					))}
+				</div>
+			</section>
+
+			<section className={`cart-section ${isActive && 'active'}`}>
+				<div className='cart-logo'>
+					<h1 className='cart-title'>Cart</h1>
+					<button onClick={() => setIsActive(false)}>Close</button>
+				</div>
+				<div className='cart-container'>
+					{cart.length > 0 ? (
+						cart.map((item) => (
+							<div className='cart-item' key={item.id}>
+								<div className='cart-img'>
+									<Image src={item.pizza?.img} fill alt={item.pizza.name} priority />
+								</div>
+								<div className='cart-text'>
+									<div className='cart-name'>{item.pizza?.name}</div>
+									<div className='toping'>{item.toping}</div>
+									<div className='cart-price'>${item.total}</div>
+								</div>
+								<button onClick={() => deletePizza(item.id)}>X</button>
+							</div>
+						))
+					) : (
+						<div className='no-item'>The shoping cart is still empty, click item to add cart</div>
+					)}
+				</div>
+				<div className='cart-total'>
+					<div className='card-total-group'>
+						<div>Total</div>
+						<div>${cart.reduce((acc, pizza) => acc + pizza.total, 0)}</div>
+					</div>
+				</div>
+			</section>
+
+			{modalToping && <ModalToping addToping={addTopping} addToCart={addToCart} setModalToping={setModalToping} setTopings={setTopings} />}
+		</main>
+	);
 }
