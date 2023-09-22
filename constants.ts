@@ -82,4 +82,10 @@ export const pizzas: Pizza[] = [
 		price: 12,
 		img: '/assets/pizza3.jpg',
 	},
+	{
+		id: 4,
+		name: 'Pinapple Mix',
+		price: 20,
+		img: '/assets/pizza4.jpg',
+	},
 ];
